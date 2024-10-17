@@ -1,4 +1,4 @@
-package eciesgo
+package ecies
 
 import (
 	"bytes"
