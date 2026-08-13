@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/big"
+	"net"
 	"net/http"
 	"net/url"
 	"testing"
@@ -125,7 +126,24 @@ func TestKEM(t *testing.T) {
 	)
 }
 
+// The Python interop backend was hosted on Deta, which has shut down, so the
+// host no longer resolves. Skip rather than fail: a permanently red suite hides
+// real regressions, and these tests start running again by themselves if the
+// backend is ever rehosted.
+func skipIfPythonBackendUnavailable(t *testing.T) {
+	t.Helper()
+	u, err := url.Parse(pythonBackend)
+	if err != nil {
+		t.Skipf("python interop backend URL %q is unparseable: %v", pythonBackend, err)
+	}
+	if _, err := net.LookupHost(u.Hostname()); err != nil {
+		t.Skipf("python interop backend %s is unreachable: %v", u.Hostname(), err)
+	}
+}
+
 func TestDecryptAgainstPythonVersion(t *testing.T) {
+	skipIfPythonBackendUnavailable(t)
+
 	prv, err := NewPrivateKeyFromHex(testingReceiverPrivkeyHex)
 	if !assert.NoError(t, err) {
 		return
@@ -165,6 +183,8 @@ func TestDecryptAgainstPythonVersion(t *testing.T) {
 }
 
 func TestEncryptAgainstPythonVersion(t *testing.T) {
+	skipIfPythonBackendUnavailable(t)
+
 	prv, err := NewPrivateKeyFromHex(testingReceiverPrivkeyHex)
 	if !assert.NoError(t, err) {
 		return
