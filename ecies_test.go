@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -19,7 +18,7 @@ const testingMessage = "helloworld"
 const testingJsonMessage = `{"code":0,"msg":"ok","data":{"pageNumber":1,"pageSize":10,"total":0,"list":[],"realTotal":0}}{"code":0,"msg":"ok","data":{"pageNumber":1,"pageSize":10,"total":0,"list":[],"realTotal":0}}{"code":0,"msg":"ok","data":{"pageNumber":1,"pageSize":10,"total":0,"list":[],"realTotal":0}}`
 const testingReceiverPubkeyHex = "0498afe4f150642cd05cc9d2fa36458ce0a58567daeaf5fde7333ba9b403011140a4e28911fcf83ab1f457a30b4959efc4b9306f514a4c3711a16a80e3b47eb58b"
 const testingReceiverPrivkeyHex = "95d3c5e483e9b1d4f5fc8e79b2deaf51362980de62dbb082a9a4257eef653d7d"
-const pythonBackend = "https://eciespydemo-1-d5397785.deta.app/"
+const pythonBackend = "https://demo.ecies.org/"
 
 var testingReceiverPrivkey = []byte{51, 37, 145, 156, 66, 168, 189, 189, 176, 19, 177, 30, 148, 104, 25, 140, 155, 42, 248, 190, 121, 110, 16, 174, 143, 148, 72, 129, 94, 113, 219, 58}
 
@@ -126,10 +125,11 @@ func TestKEM(t *testing.T) {
 	)
 }
 
-// The Python interop backend was hosted on Deta, which has shut down, so the
-// host no longer resolves. Skip rather than fail: a permanently red suite hides
-// real regressions, and these tests start running again by themselves if the
-// backend is ever rehosted.
+// These two tests reach a live third-party host, so they are skipped rather
+// than failed when it cannot be resolved. A test that goes red because someone
+// else's service is down is a flaky gate, and a flaky gate gets ignored, which
+// costs more than the coverage it protects. Skipping keeps the signal honest:
+// the tests run whenever the host is reachable and say so plainly when it is not.
 func skipIfPythonBackendUnavailable(t *testing.T) {
 	t.Helper()
 	u, err := url.Parse(pythonBackend)
@@ -160,11 +160,11 @@ func TestDecryptAgainstPythonVersion(t *testing.T) {
 
 	defer resp.Body.Close()
 
-	if !assert.Equal(t, http.StatusOK, resp.StatusCode) {
+	if !assert.Equal(t, http.StatusCreated, resp.StatusCode) {
 		return
 	}
 
-	hexBytes, err := ioutil.ReadAll(resp.Body)
+	hexBytes, err := io.ReadAll(resp.Body)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -206,11 +206,11 @@ func TestEncryptAgainstPythonVersion(t *testing.T) {
 
 	defer resp.Body.Close()
 
-	if !assert.Equal(t, http.StatusOK, resp.StatusCode) {
+	if !assert.Equal(t, http.StatusCreated, resp.StatusCode) {
 		return
 	}
 
-	plaintext, err := ioutil.ReadAll(resp.Body)
+	plaintext, err := io.ReadAll(resp.Body)
 	if !assert.NoError(t, err) {
 		return
 	}
